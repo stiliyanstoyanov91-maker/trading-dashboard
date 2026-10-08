@@ -1,0 +1,52 @@
+{
+ "sample": false,
+ "updated_at": "2026-10-08T12:15:21+03:00",
+ "pair": "BTC/USDC",
+ "currency": "USDC",
+ "starting_capital": 10000.0,
+ "bot": {
+  "status": "running",
+  "last_cycle": "2026-10-08T12:15:08+03:00"
+ },
+ "price": {
+  "last": 82991.29,
+  "rsi": 55.56,
+  "tema": 82970.23,
+  "bb_mid": 82937.29
+ },
+ "balance": {
+  "quote": 10000.0,
+  "base": 0.0,
+  "equity": 10000.0
+ },
+ "open_position": null,
+ "stats": {
+  "total_trades": 0,
+  "wins": 0,
+  "losses": 0,
+  "win_rate": 0.0,
+  "net_pnl": 0.0,
+  "net_pnl_pct": 0.0,
+  "gross_profit": 0.0,
+  "gross_loss": 0.0,
+  "profit_factor": null,
+  "avg_win": 0.0,
+  "avg_loss": 0.0,
+  "expectancy": 0.0,
+  "fees_total": 0.0,
+  "max_drawdown_pct": 0.0,
+  "today_pnl": 0.0,
+  "daily_loss_limit": 10.0,
+  "exit_reasons": {
+   "stop": 0,
+   "roi_4": 0,
+   "roi_2": 0,
+   "roi_1": 0,
+   "signal": 0
+  }
+ },
+ "equity_curve": [],
+ "daily_pnl": [],
+ "trades": [],
+ "analyses": []
+}
