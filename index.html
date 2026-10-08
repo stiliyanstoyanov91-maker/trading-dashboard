@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b0e13">
+  <meta name="description" content="Табло за хартиена търговия на BTC/USDC: капитал, позиция, статистика и сделки.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Paper BTC">
+  <title>Хартиена търговия</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Към съдържанието</a>
+  <div id="sample-banner" class="sample-banner" hidden role="status">Примерни данни · sample data</div>
+  <div id="error-banner" class="error-banner" hidden role="alert"></div>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="#1c2531"/>
+          <path d="M6 22l6-6 4 3 10-11" fill="none" stroke="#3ddc97" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="26" cy="8" r="2" fill="#e4b15a"/>
+        </svg>
+        <div>
+          <h1>Хартиена търговия</h1>
+          <p id="pair" class="pair">—</p>
+        </div>
+      </div>
+      <button type="button" id="refresh" class="refresh">Обнови</button>
+    </header>
+    <main id="main">
+      <section class="card hero" aria-labelledby="equity-label">
+        <div class="hero-top">
+          <div>
+            <p id="equity-label" class="label">Капитал</p>
+            <p class="equity"><span id="equity">—</span> <span id="equity-unit" class="unit">—</span></p>
+            <p class="from">от <span id="starting">—</span></p>
+          </div>
+          <span id="status-pill" class="pill" data-status="unknown">—</span>
+        </div>
+        <div class="split">
+          <div>
+            <p class="label">Общ резултат</p>
+            <p id="net-pnl" class="metric">—</p>
+            <p id="net-pnl-pct" class="submetric">—</p>
+          </div>
+          <div>
+            <p class="label">Днес</p>
+            <p id="today-pnl" class="metric">—</p>
+            <p class="submetric">Лимит <span id="daily-limit">—</span></p>
+          </div>
+        </div>
+        <p id="freshness" class="freshness" aria-live="polite">
+          <span>Обновено </span><time id="updated-at">—</time>
+          <span id="stale-note" class="stale-note" hidden>Данните са по-стари от 15 минути</span>
+        </p>
+        <p class="cycle">Последен цикъл <time id="last-cycle">—</time></p>
+        <dl id="indicators" class="indicators" hidden>
+          <div>
+            <dt>Цена</dt>
+            <dd id="price-last">—</dd>
+          </div>
+          <div>
+            <dt>RSI 14</dt>
+            <dd id="price-rsi">—</dd>
+          </div>
+          <div>
+            <dt>TEMA 9</dt>
+            <dd id="price-tema">—</dd>
+          </div>
+          <div>
+            <dt>BB среда</dt>
+            <dd id="price-bb">—</dd>
+          </div>
+        </dl>
+        <dl id="balance" class="balance" hidden>
+          <div>
+            <dt id="bal-quote-label">Котировка</dt>
+            <dd id="bal-quote">—</dd>
+          </div>
+          <div>
+            <dt id="bal-base-label">База</dt>
+            <dd id="bal-base">—</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="card" aria-labelledby="position-title">
+        <div class="section-head">
+          <h2 id="position-title">Отворена позиция</h2>
+          <div id="position-pnl" class="pos-pnl" hidden></div>
+        </div>
+        <div id="position-body">
+          <p class="empty">Зареждане…</p>
+        </div>
+      </section>
+
+      <div class="chart-grid">
+        <section class="card" aria-labelledby="equity-chart-title">
+          <h2 id="equity-chart-title">Крива на капитала</h2>
+          <div id="equity-chart" class="chart"></div>
+        </section>
+        <section class="card" aria-labelledby="daily-chart-title">
+          <h2 id="daily-chart-title">Дневен резултат</h2>
+          <div id="daily-chart" class="chart"></div>
+        </section>
+      </div>
+
+      <section class="card" aria-labelledby="stats-title">
+        <h2 id="stats-title">Статистика</h2>
+        <div class="stats">
+          <div class="stat"><p class="label">Сделки</p><p id="stat-trades" class="stat-value">—</p></div>
+          <div class="stat"><p class="label">Успеваемост</p><p id="stat-winrate" class="stat-value">—</p></div>
+          <div class="stat"><p class="label">Печеливши</p><p id="stat-wins" class="stat-value">—</p></div>
+          <div class="stat"><p class="label">Губещи</p><p id="stat-losses" class="stat-value">—</p></div>
+          <div class="stat"><p class="label">Фактор на печалба</p><p id="stat-pf" class="stat-value">—</p></div>
+          <div class="stat"><p class="label">Очакване</p><p id="stat-exp" class="stat-value">—</p></div>
+          <div class="stat"><p class="label">Средна печалба</p><p id="stat-avg-win" class="stat-value">—</p></div>
+          <div class="stat"><p class="label">Средна загуба</p><p id="stat-avg-loss" class="stat-value">—</p></div>
+          <div class="stat"><p class="label">Брутна печалба</p><p id="stat-gross-profit" class="stat-value">—</p></div>
+          <div class="stat"><p class="label">Брутна загуба</p><p id="stat-gross-loss" class="stat-value">—</p></div>
+          <div class="stat"><p class="label">Такси</p><p id="stat-fees" class="stat-value">—</p></div>
+          <div class="stat"><p class="label">Макс. спад</p><p id="stat-dd" class="stat-value">—</p></div>
+        </div>
+        <h3 class="subhead">Причини за изход</h3>
+        <div id="exits"></div>
+      </section>
+
+      <div class="lower-grid">
+        <section class="card" aria-labelledby="trades-title">
+          <h2 id="trades-title">Сделки</h2>
+          <div id="trades"></div>
+        </section>
+        <section class="card" aria-labelledby="analyses-title">
+          <h2 id="analyses-title">Последни анализи</h2>
+          <div id="analyses"></div>
+        </section>
+      </div>
+    </main>
+    <footer>
+      <p>Само дълги · 5-минутна mean-reversion. Автообновяване на всеки 60 секунди от <code>data/dashboard.json</code>.</p>
+    </footer>
+  </div>
+  <noscript>Таблото зарежда <code>data/dashboard.json</code> и се нуждае от JavaScript.</noscript>
+  <script src="app.js" defer></script>
+</body>
+</html>
