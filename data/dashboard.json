@@ -1,53 +1,44 @@
 {
  "sample": false,
- "updated_at": "2026-10-08T19:06:08+03:00",
+ "updated_at": "2026-10-08T19:07:08+03:00",
  "pair": "BTC/USDC",
  "currency": "USDC",
  "starting_capital": 10000.0,
  "bot": {
   "status": "running",
-  "last_cycle": "2026-10-08T19:06:08+03:00"
+  "last_cycle": "2026-10-08T19:07:08+03:00"
  },
  "price": {
-  "last": 80986.71,
+  "last": 80765.15,
   "rsi": 28.04,
   "tema": 80952.42,
   "bb_mid": 81928.92
  },
  "balance": {
-  "quote": 9979.9475,
-  "base": 0.00024243,
-  "equity": 9999.5748
+  "quote": 9999.4784,
+  "base": 0.0,
+  "equity": 9999.4784
  },
- "open_position": {
-  "entry_time": "2026-10-08T14:25:08+03:00",
-  "entry_price": 82500.09,
-  "volume": 0.00024243,
-  "cost": 20.0005,
-  "stop_price": 80850.09,
-  "current_target_pct": 1.0,
-  "unrealized_pnl": -0.4762,
-  "unrealized_pct": -2.3749
- },
+ "open_position": null,
  "stats": {
-  "total_trades": 0,
+  "total_trades": 1,
   "wins": 0,
-  "losses": 0,
+  "losses": 1,
   "win_rate": 0.0,
-  "net_pnl": 0.0,
-  "net_pnl_pct": 0.0,
+  "net_pnl": -0.5216,
+  "net_pnl_pct": -0.00522,
   "gross_profit": 0.0,
-  "gross_loss": 0.0,
-  "profit_factor": null,
+  "gross_loss": -0.5216,
+  "profit_factor": 0.0,
   "avg_win": 0.0,
-  "avg_loss": 0.0,
-  "expectancy": 0.0,
-  "fees_total": 0.0,
+  "avg_loss": -0.5216,
+  "expectancy": -0.5216,
+  "fees_total": 0.1029,
   "max_drawdown_pct": 0.0043,
-  "today_pnl": 0.0,
+  "today_pnl": -0.5216,
   "daily_loss_limit": 10.0,
   "exit_reasons": {
-   "stop": 0,
+   "stop": 1,
    "roi_4": 0,
    "roi_2": 0,
    "roi_1": 0,
@@ -388,8 +379,29 @@
    "equity": 9999.5748
   }
  ],
- "daily_pnl": [],
- "trades": [],
+ "daily_pnl": [
+  {
+   "date": "2026-10-08",
+   "pnl": -0.5216,
+   "trades": 1
+  }
+ ],
+ "trades": [
+  {
+   "id": 1,
+   "entry_time": "2026-10-08T14:25:08+03:00",
+   "exit_time": "2026-10-08T19:07:08+03:00",
+   "entry_price": 82500.09,
+   "exit_price": 80773.16,
+   "volume": 0.00024243,
+   "pnl": -0.521574,
+   "pnl_pct": -2.601,
+   "fees": 0.102914,
+   "duration_min": 282.0,
+   "exit_reason": "stop",
+   "analysis": null
+  }
+ ],
  "analyses": [
   {
    "t": "2026-10-08T16:50:02+03:00",
