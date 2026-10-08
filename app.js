@@ -190,11 +190,25 @@
     return `${url.origin}${path}`;
   }
 
-  function dataUrl() {
+  function jsonUrl(fileName) {
     const root = directoryHref(document.baseURI || location.href);
-    const url = new URL("data/dashboard.json", root);
+    const url = new URL(fileName, root);
     url.searchParams.set("t", String(Date.now()));
     return url.href;
+  }
+
+  async function fetchJson(url, signal) {
+    const response = await fetch(url, {
+      cache: "no-store",
+      signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) {
+      const error = new Error(`HTTP ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
+    return response.json();
   }
 
   function freshness(iso, nowMs) {
@@ -895,13 +909,13 @@
       if (controller) controller.abort();
     }, 20000);
     try {
-      const response = await fetch(dataUrl(), {
-        cache: "no-store",
-        signal: controller ? controller.signal : undefined,
-        headers: { Accept: "application/json" },
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const json = await response.json();
+      let json;
+      try {
+        json = await fetchJson(jsonUrl("data/dashboard.json"), controller ? controller.signal : undefined);
+      } catch (error) {
+        if (!error || error.status !== 404) throw error;
+        json = await fetchJson(jsonUrl("data/dashboard.sample.json"), controller ? controller.signal : undefined);
+      }
       if (!asObject(json)) throw new Error("shape");
       const serialized = JSON.stringify(json);
       const data = normalize(json);

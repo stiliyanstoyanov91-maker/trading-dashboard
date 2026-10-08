@@ -12,11 +12,11 @@ https://stiliyanstoyanov91-maker.github.io/trading-dashboard/
 
 The bot overwrites `data/dashboard.json` and commits it to `main` every few minutes. `.github/workflows/pages.yml` deploys the repo to GitHub Pages on every push to `main`, so the published site picks up the new file.
 
-The page requests `data/dashboard.json?t=<Date.now()>` with `cache: "no-store"` on load, again every 60 seconds, and when the tab becomes visible. The URL is resolved against the page directory, so the same file works locally and under `/trading-dashboard/`.
+The page requests `data/dashboard.json?t=<Date.now()>` with `cache: "no-store"` on load, again every 60 seconds, and when the tab becomes visible. The URL is resolved against the page directory, so the same file works locally and under `/trading-dashboard/`. If that file is missing (HTTP 404), the page loads `data/dashboard.sample.json` instead.
 
 Times are shown in **Europe/Sofia**. If `updated_at` is missing, invalid, or older than 15 minutes, the timestamp and a warning turn amber.
 
-When `"sample": true`, a sticky banner reads **Примерни данни · sample data**. The file in this repo is fake data so the page renders before the bot writes a real snapshot. The bot should set `"sample": false` (or omit the flag) for live paper results.
+When `"sample": true`, a sticky banner reads **Примерни данни · sample data**. `data/dashboard.sample.json` is a fake snapshot for preview and tests. The bot publishes the live file at `data/dashboard.json` and should set `"sample": false` there. Do not overwrite a live `data/dashboard.json` with the sample.
 
 ## Local preview
 
@@ -108,7 +108,7 @@ Closed-trade `pnl` is net of that trade's `fees`. `fees_total` is the sum of clo
 }
 ```
 
-The checked-in sample is `data/dashboard.json` with `"sample": true`. Zeros above are the shape, not live values.
+The fake snapshot is `data/dashboard.sample.json` (`"sample": true`). Zeros above are the shape, not live values. `data/dashboard.json` is the bot's file.
 
 ### Fields
 

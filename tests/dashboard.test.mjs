@@ -7,7 +7,7 @@ const root = new URL("../", import.meta.url);
 const code = fs.readFileSync(new URL("app.js", root), "utf8");
 const html = fs.readFileSync(new URL("index.html", root), "utf8");
 const css = fs.readFileSync(new URL("styles.css", root), "utf8");
-const sample = JSON.parse(fs.readFileSync(new URL("data/dashboard.json", root), "utf8"));
+const sample = JSON.parse(fs.readFileSync(new URL("data/dashboard.sample.json", root), "utf8"));
 
 const sandbox = {
   URL,
