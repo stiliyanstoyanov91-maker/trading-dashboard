@@ -145,3 +145,12 @@ test("sample file matches the contract and is not copied into the page", () => {
   assert.match(html, /apple-mobile-web-app-capable/);
   assert.match(html, /theme-color/);
 });
+
+test("parseMarkdown handles headings, lists and paragraphs", () => {
+  const b = dash.parseMarkdown("# Заглавие\n\n- **a:** b\n- c\n\nтекст\nоще");
+  assert.equal(b[0].type, "h");
+  assert.equal(b[1].type, "list");
+  assert.equal(b[1].items.length, 2);
+  assert.equal(b[2].type, "p");
+  assert.equal(b[2].lines.length, 2);
+});

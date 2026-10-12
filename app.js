@@ -711,6 +711,89 @@
     });
   }
 
+  function mdInline(parent, src) {
+    const re = /(\*\*([^*]+)\*\*|__([^_]+)__|`([^`]+)`|\*([^*\s][^*]*)\*)/g;
+    let last = 0;
+    let m;
+    while ((m = re.exec(src))) {
+      if (m.index > last) parent.append(document.createTextNode(src.slice(last, m.index)));
+      let node;
+      if (m[2] != null || m[3] != null) { node = document.createElement("strong"); node.textContent = m[2] ?? m[3]; }
+      else if (m[4] != null) { node = document.createElement("code"); node.textContent = m[4]; }
+      else { node = document.createElement("em"); node.textContent = m[5]; }
+      parent.append(node);
+      last = re.lastIndex;
+    }
+    if (last < src.length) parent.append(document.createTextNode(src.slice(last)));
+  }
+
+  function parseMarkdown(src) {
+    const blocks = [];
+    let para = null;
+    let list = null;
+    const flush = () => { para = null; list = null; };
+    for (const raw of String(src || "").replace(/\r/g, "").split("\n")) {
+      const line = raw.trimEnd();
+      if (!line.trim()) { flush(); continue; }
+      let m;
+      if ((m = /^\s*(#{1,6})\s+(.*)$/.exec(line))) { flush(); blocks.push({ type: "h", level: m[1].length, text: m[2] }); continue; }
+      if (/^\s*([-*_])\s*(\1\s*){2,}$/.test(line)) { flush(); blocks.push({ type: "hr" }); continue; }
+      if ((m = /^\s*([-*+]|\d+[.)])\s+(.*)$/.exec(line))) {
+        const ordered = /\d/.test(m[1]);
+        para = null;
+        if (!list || list.ordered !== ordered) { list = { type: "list", ordered, items: [] }; blocks.push(list); }
+        list.items.push(m[2]);
+        continue;
+      }
+      if (list && /^\s{2,}/.test(raw)) { list.items[list.items.length - 1] += " " + line.trim(); continue; }
+      list = null;
+      if (!para) { para = { type: "p", lines: [] }; blocks.push(para); }
+      para.lines.push(line.trim());
+    }
+    return blocks;
+  }
+
+  function renderMarkdown(host, src, skipTitle) {
+    let blocks = parseMarkdown(src);
+    if (skipTitle && blocks[0] && blocks[0].type === "h" && blocks[0].text.trim() === skipTitle.trim()) blocks = blocks.slice(1);
+    blocks.forEach((b) => {
+      let node;
+      if (b.type === "h") { node = document.createElement("h" + Math.min(6, b.level + 2)); mdInline(node, b.text); }
+      else if (b.type === "hr") node = document.createElement("hr");
+      else if (b.type === "list") {
+        node = document.createElement(b.ordered ? "ol" : "ul");
+        b.items.forEach((it) => { const li = document.createElement("li"); mdInline(li, it); node.append(li); });
+      } else {
+        node = document.createElement("p");
+        b.lines.forEach((l, i) => { if (i) node.append(document.createElement("br")); mdInline(node, l); });
+      }
+      host.append(node);
+    });
+  }
+
+  function analysisLabel(row) {
+    const when = row.t ? formatWhen(row.t) : null;
+    return when || row.title || "Анализ";
+  }
+
+  function buildAnalysis(row) {
+    const article = document.createElement("article");
+    article.className = "note analysis";
+    const heading = document.createElement("h3");
+    heading.textContent = row.title || "Анализ";
+    const time = document.createElement("time");
+    if (row.t) time.dateTime = row.t;
+    time.textContent = row.t ? (formatWhen(row.t) || "—") : "—";
+    const body = document.createElement("div");
+    body.className = "md";
+    if (row.text) renderMarkdown(body, row.text, row.title);
+    else body.textContent = "—";
+    article.append(heading, time, body);
+    return article;
+  }
+
+  let analysesSelected = null;
+
   function renderAnalyses(rows) {
     const host = $("analyses");
     host.replaceChildren();
@@ -721,19 +804,61 @@
       host.append(empty);
       return;
     }
-    rows.forEach((row) => {
-      const article = document.createElement("article");
-      article.className = "note";
-      const heading = document.createElement("h3");
-      heading.textContent = row.title || "Анализ";
-      const time = document.createElement("time");
-      if (row.t) time.dateTime = row.t;
-      time.textContent = row.t ? (formatWhen(row.t) || "—") : "—";
-      const paragraph = document.createElement("p");
-      paragraph.textContent = row.text || "—";
-      article.append(heading, time, paragraph);
-      host.append(article);
-    });
+    const keyOf = (row, i) => row.t || "idx-" + i;
+    let idx = rows.findIndex((r, i) => keyOf(r, i) === analysesSelected);
+    if (idx < 0) { idx = 0; analysesSelected = null; }
+    const view = document.createElement("div");
+    view.className = "analysis-view";
+    if (rows.length > 1) {
+      const bar = document.createElement("div");
+      bar.className = "analysis-filter";
+      const label = document.createElement("label");
+      label.htmlFor = "analysis-select";
+      label.textContent = "Анализ от:";
+      const select = document.createElement("select");
+      select.id = "analysis-select";
+      rows.forEach((row, i) => {
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = analysisLabel(row) + (i === 0 ? " (най-нов)" : "");
+        select.append(opt);
+      });
+      select.value = String(idx);
+      select.addEventListener("change", () => {
+        const i = Number(select.value);
+        analysesSelected = i === 0 ? null : keyOf(rows[i], i);
+        view.replaceChildren(buildAnalysis(rows[i]));
+      });
+      bar.append(label, select);
+      host.append(bar);
+    }
+    view.append(buildAnalysis(rows[idx]));
+    host.append(view);
+    if (rows.length > 1) {
+      const older = document.createElement("details");
+      older.className = "analysis-older";
+      const summary = document.createElement("summary");
+      summary.textContent = "По-стари анализи (" + (rows.length - 1) + ")";
+      const list = document.createElement("ul");
+      rows.slice(1).forEach((row, j) => {
+        const i = j + 1;
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = analysisLabel(row);
+        btn.addEventListener("click", () => {
+          analysesSelected = keyOf(row, i);
+          const sel = $("analysis-select");
+          if (sel) sel.value = String(i);
+          view.replaceChildren(buildAnalysis(row));
+          view.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        li.append(btn);
+        list.append(li);
+      });
+      older.append(summary, list);
+      host.append(older);
+    }
   }
 
   function renderExits(reasons) {
@@ -960,6 +1085,7 @@
     formatDuration,
     formatAvgLoss,
     directoryHref,
+    parseMarkdown,
   };
 
   if (typeof document !== "undefined") {
