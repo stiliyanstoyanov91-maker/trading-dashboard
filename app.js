@@ -352,6 +352,21 @@
     return rows;
   }
 
+  function mergeAnalyses(primary, fallback) {
+    const seen = new Set();
+    const rows = [];
+    for (const row of [...primary, ...fallback]) {
+      const key = (row.t || "") + "|" + (row.title || "");
+      const tkey = "|" + (row.title || "");
+      if (seen.has(key) || (row.title && seen.has(tkey))) continue;
+      seen.add(key);
+      if (row.title) seen.add(tkey);
+      rows.push(row);
+    }
+    rows.sort((a, b) => b.ms - a.ms);
+    return rows;
+  }
+
   function normalize(raw) {
     const data = asObject(raw) || {};
     const bot = asObject(data.bot) || {};
@@ -1042,8 +1057,13 @@
         json = await fetchJson(jsonUrl("data/dashboard.sample.json"), controller ? controller.signal : undefined);
       }
       if (!asObject(json)) throw new Error("shape");
-      const serialized = JSON.stringify(json);
       const data = normalize(json);
+      let extra = null;
+      try {
+        extra = await fetchJson(jsonUrl("data/analyses.json"), controller ? controller.signal : undefined);
+      } catch (e) { extra = null; }
+      data.analyses = mergeAnalyses(normalizeAnalyses(extra), data.analyses);
+      const serialized = JSON.stringify([json, extra]);
       state.data = data;
       if (serialized !== state.serialized) {
         state.serialized = serialized;
