@@ -11,6 +11,7 @@ const sample = JSON.parse(fs.readFileSync(new URL("data/dashboard.sample.json", 
 
 const sandbox = {
   URL,
+  URLSearchParams,
   Intl,
   Date,
   Math,
@@ -153,4 +154,38 @@ test("parseMarkdown handles headings, lists and paragraphs", () => {
   assert.equal(b[1].items.length, 2);
   assert.equal(b[2].type, "p");
   assert.equal(b[2].lines.length, 2);
+});
+
+test("daily MACD payload maps onto the shared view", () => {
+  const raw = {
+    bot: "daily-macd", pair: "BTC/USDC", updated: "2026-10-13T15:01:41+03:00", status: "running",
+    strategy: { take_profit_pct: 10, stop_loss_pct: -4, stake_usdc: 1000 },
+    last_price: 83234.26, starting_capital: 10000, balance: { USDC: 9000, BTC: 0.012 }, equity: 9990,
+    equity_change_pct: -0.1, indicators: { macd: 1, macd_signal: 2, hist: -1, cross_up: false, candle_utc_day: "2026-10-12" },
+    position: { entry_time: "2026-10-12T03:00:10+03:00", entry_price: 83000, volume: 0.012, cost_usdc: 996, stop_price: 79680, take_profit_price: 91300, unrealized_pct: 0.2, unrealized_usdc: 2 },
+    stats: { trades: 2, wins: 1, total_pnl_usdc: 60, win_rate_pct: 50 },
+    trades: [
+      { trade_id: 1, entry_time: "2026-09-01T03:00:00+03:00", exit_time: "2026-09-05T10:00:00+03:00", entry_price: "80000", exit_price: "88000", volume: "0.0125", pnl_usdc: "100", pnl_pct: "10", duration_h: "103", exit_reason: "take_profit", fees_usdc: "1" },
+      { trade_id: 2, entry_time: "2026-09-10T03:00:00+03:00", exit_time: "2026-09-11T10:00:00+03:00", entry_price: 90000, exit_price: 86400, volume: 0.011, pnl_usdc: -40, pnl_pct: -4, duration_h: 31, exit_reason: "stop" },
+    ],
+  };
+  const v = dash.normalizeDailyMacd(raw);
+  assert.equal(v.balance.equity, 9990);
+  assert.equal(v.balance.quote, 9000);
+  assert.equal(v.openPosition.cost, 996);
+  assert.equal(v.stats.totalTrades, 2);
+  assert.equal(v.stats.losses, 1);
+  assert.equal(v.stats.winRate, 0.5);
+  assert.equal(v.trades[0].id, "macd-2");
+  assert.equal(v.trades[1].durationMin, 103 * 60);
+  assert.equal(v.stats.exitReasons.take_profit, 1);
+  assert.equal(v.equityCurve.at(-1).equity, 9990);
+  const empty = dash.normalizeDailyMacd({});
+  assert.equal(empty.openPosition, null);
+  assert.equal(empty.balance.equity, null);
+  assert.equal(dash.resolveBot("?bot=daily_macd", "rsi"), "daily_macd");
+  assert.equal(dash.resolveBot("", "daily_macd"), "daily_macd");
+  assert.equal(dash.resolveBot("?bot=nope", null), "rsi");
+  assert.match(html, /Бот:/);
+  assert.match(html, /Дневен MACD/);
 });

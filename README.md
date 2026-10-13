@@ -136,3 +136,14 @@ The fake snapshot is `data/dashboard.sample.json` (`"sample": true`). Zeros abov
 ## Deploy
 
 Pages is published by GitHub Actions (`actions/configure-pages`, `actions/upload-pages-artifact`, `actions/deploy-pages`), not by Jekyll. The repository Pages source must be **GitHub Actions**. Each bot commit on `main` republishes the JSON with the site.
+
+## Bots
+
+A selector at the top (**Бот:**) switches between bots; the choice is kept in `localStorage` (`dashBot`) and can be forced with `?bot=rsi` or `?bot=daily_macd`.
+
+| key | data | analyses |
+|---|---|---|
+| `rsi` (RSI/TEMA, минутен) | `data/dashboard.json` | `data/analyses.json` |
+| `daily_macd` (Дневен MACD) | `data/daily_macd.json` | `data/analyses_daily_macd.json` |
+
+`daily_macd.json` is mapped onto the same view in `normalizeDailyMacd()` (stats like profit factor / drawdown and the equity curve are derived from its closed trades). Missing fields for that bot show "няма данни". Its stale threshold is 30 minutes (it publishes every 15).

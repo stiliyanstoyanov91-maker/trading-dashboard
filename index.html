@@ -15,13 +15,20 @@
   <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="styles.css?v=20261012a">
+  <link rel="stylesheet" href="styles.css?v=20261013a">
 </head>
 <body>
   <a class="skip" href="#main">Към съдържанието</a>
   <div id="sample-banner" class="sample-banner" hidden role="status">Примерни данни · sample data</div>
   <div id="error-banner" class="error-banner" hidden role="alert"></div>
   <div class="wrap">
+    <div class="bot-bar">
+      <label for="bot-select">Бот:</label>
+      <select id="bot-select" name="bot">
+        <option value="rsi">RSI/TEMA (минутен)</option>
+        <option value="daily_macd">Дневен MACD</option>
+      </select>
+    </div>
     <header class="top">
       <div class="brand">
         <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
@@ -53,34 +60,35 @@
             <p id="net-pnl-pct" class="submetric">—</p>
           </div>
           <div>
-            <p class="label">Днес</p>
+            <p id="lbl-today" class="label">Днес</p>
             <p id="today-pnl" class="metric">—</p>
-            <p class="submetric">Лимит <span id="daily-limit">—</span></p>
+            <p class="submetric"><span id="lbl-limit">Лимит</span> <span id="daily-limit">—</span></p>
           </div>
         </div>
         <p id="freshness" class="freshness" aria-live="polite">
           <span>Обновено </span><time id="updated-at">—</time>
           <span id="stale-note" class="stale-note" hidden>Данните са по-стари от 15 минути</span>
         </p>
-        <p class="cycle">Последен цикъл <time id="last-cycle">—</time></p>
+        <p class="cycle"><span id="lbl-cycle">Последен цикъл</span> <time id="last-cycle">—</time></p>
         <dl id="indicators" class="indicators" hidden>
           <div>
-            <dt>Цена</dt>
+            <dt id="lbl-i1">Цена</dt>
             <dd id="price-last">—</dd>
           </div>
           <div>
-            <dt>RSI 14</dt>
+            <dt id="lbl-i2">RSI 14</dt>
             <dd id="price-rsi">—</dd>
           </div>
           <div>
-            <dt>TEMA 9</dt>
+            <dt id="lbl-i3">TEMA 9</dt>
             <dd id="price-tema">—</dd>
           </div>
           <div>
-            <dt>BB среда</dt>
+            <dt id="lbl-i4">BB среда</dt>
             <dd id="price-bb">—</dd>
           </div>
         </dl>
+        <p id="indicator-note" class="cycle" hidden></p>
         <dl id="balance" class="balance" hidden>
           <div>
             <dt id="bal-quote-label">Котировка</dt>
@@ -146,10 +154,10 @@
       </div>
     </main>
     <footer>
-      <p>Само дълги · 5-минутна mean-reversion. Автообновяване на всеки 60 секунди от <code>data/dashboard.json</code> и <code>data/analyses.json</code>.</p>
+      <p id="footer-note">Само дълги · 5-минутна mean-reversion. Автообновяване на всеки 60 секунди от <code>data/dashboard.json</code> и <code>data/analyses.json</code>.</p>
     </footer>
   </div>
   <noscript>Таблото зарежда <code>data/dashboard.json</code> и се нуждае от JavaScript.</noscript>
-  <script src="app.js?v=20261012a" defer></script>
+  <script src="app.js?v=20261013a" defer></script>
 </body>
 </html>

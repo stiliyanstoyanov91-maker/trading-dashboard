@@ -25,6 +25,8 @@
 
   const STATUS = {
     running: "Работи",
+    manual_publish: "Ръчно публикуване",
+    starting: "Стартира",
     stopped: "Спрян",
     paused_daily_limit: "Пауза · дневен лимит",
     kill_switch: "Авариен стоп",
@@ -38,7 +40,43 @@
     ["signal", "Сигнал", "var(--gold)"],
   ];
 
+  const EXIT_ORDER_MACD = [
+    ["stop", "Стоп −4%", "var(--bad)"],
+    ["take_profit", "Цел +10%", "var(--good)"],
+  ];
+
+  const NO_DATA = "няма данни";
+
+  const BOTS = {
+    rsi: {
+      label: "RSI/TEMA (минутен)",
+      file: "data/dashboard.json",
+      sample: "data/dashboard.sample.json",
+      analyses: "data/analyses.json",
+      staleMs: STALE_MS,
+      footer: "Само дълги · 5-минутна mean-reversion (RSI 14 / TEMA 9 / BB 20). Автообновяване на всеки 60 секунди от data/dashboard.json и data/analyses.json.",
+    },
+    daily_macd: {
+      label: "Дневен MACD",
+      file: "data/daily_macd.json",
+      sample: null,
+      analyses: "data/analyses_daily_macd.json",
+      staleMs: 30 * 60 * 1000,
+      footer: "Само дълги · дневни свещи · MACD(12,26,9) пресичане нагоре · цел +10% / стоп −4% · отделна хартиена сметка. Автообновяване на всеки 60 секунди от data/daily_macd.json и data/analyses_daily_macd.json.",
+    },
+  };
+
+  function resolveBot(search, stored) {
+    let fromUrl = null;
+    try { fromUrl = new URLSearchParams(search || "").get("bot"); } catch (e) { fromUrl = null; }
+    if (fromUrl && Object.prototype.hasOwnProperty.call(BOTS, fromUrl)) return fromUrl;
+    if (stored && Object.prototype.hasOwnProperty.call(BOTS, stored)) return stored;
+    return "rsi";
+  }
+
   const state = {
+    bot: "rsi",
+    seq: 0,
     inFlight: false,
     serialized: null,
     data: null,
@@ -48,6 +86,14 @@
 
   function asNumber(value) {
     return typeof value === "number" && Number.isFinite(value) ? value : null;
+  }
+
+  function asNum(value) {
+    if (typeof value === "string" && value.trim() !== "") {
+      const n = Number(value);
+      return Number.isFinite(n) ? n : null;
+    }
+    return asNumber(value);
   }
 
   function asText(value) {
@@ -211,12 +257,12 @@
     return response.json();
   }
 
-  function freshness(iso, nowMs) {
+  function freshness(iso, nowMs, staleMs) {
     const now = nowMs == null ? Date.now() : nowMs;
     if (!iso) return { level: "missing" };
     const ms = Date.parse(iso);
     if (!Number.isFinite(ms)) return { level: "invalid" };
-    if (now - ms > STALE_MS) return { level: "old" };
+    if (now - ms > (staleMs || STALE_MS)) return { level: "old" };
     return { level: "ok" };
   }
 
@@ -404,13 +450,148 @@
     };
   }
 
+  function normalizeDailyMacd(raw) {
+    const data = asObject(raw) || {};
+    const bal = asObject(data.balance) || {};
+    const ind = asObject(data.indicators) || {};
+    const st = asObject(data.stats) || {};
+    const strat = asObject(data.strategy) || {};
+    const pos = asObject(data.position);
+    const start = asNumber(data.starting_capital);
+    const equity = asNumber(data.equity);
+    const trades = [];
+    (Array.isArray(data.trades) ? data.trades : []).forEach((row, index) => {
+      const item = asObject(row);
+      if (!item) return;
+      const entryTime = asTime(item.entry_time);
+      const exitTime = asTime(item.exit_time);
+      const pnl = asNum(item.pnl_usdc);
+      const dh = asNum(item.duration_h);
+      const extra = [
+        item.signal_candle ? `Сигнална свещ ${item.signal_candle}` : null,
+        asNum(item.mfe_pct) != null ? `MFE ${formatPctPoints(asNum(item.mfe_pct), { signed: true })}` : null,
+        asNum(item.mae_pct) != null ? `MAE ${formatPctPoints(asNum(item.mae_pct), { signed: true })}` : null,
+      ].filter(Boolean).join(" · ");
+      trades.push({
+        id: item.trade_id != null ? `macd-${item.trade_id}` : [entryTime, exitTime, pnl, index].join("|"),
+        entryTime,
+        exitTime,
+        entryPrice: asNum(item.entry_price),
+        exitPrice: asNum(item.exit_price),
+        volume: asNum(item.volume),
+        pnl,
+        pnlPct: asNum(item.pnl_pct),
+        fees: asNum(item.fees_usdc),
+        durationMin: dh == null ? null : dh * 60,
+        exitReason: asText(item.exit_reason),
+        analysis: extra || null,
+      });
+    });
+    trades.sort((a, b) => (stamp(b.exitTime) ?? stamp(b.entryTime) ?? -Infinity) - (stamp(a.exitTime) ?? stamp(a.entryTime) ?? -Infinity));
+    const pnls = trades.map((t) => t.pnl).filter((v) => v != null);
+    const wins = pnls.filter((v) => v > 0);
+    const losses = pnls.filter((v) => v <= 0);
+    const gp = wins.reduce((a, b) => a + b, 0);
+    const gl = losses.reduce((a, b) => a + b, 0);
+    const reasons = {};
+    trades.forEach((t) => { if (t.exitReason) reasons[t.exitReason] = (reasons[t.exitReason] || 0) + 1; });
+    const fees = trades.map((t) => t.fees).filter((v) => v != null);
+    // equity curve derived from closed trades (realized) + current equity
+    const curve = [];
+    const asc = trades.filter((t) => t.exitTime && t.pnl != null).slice().reverse();
+    if (start != null) {
+      let eq = start;
+      const first = asc.length ? (asc[0].entryTime || asc[0].exitTime) : null;
+      if (first) curve.push({ t: first, equity: eq, ms: stamp(first) });
+      asc.forEach((t) => { eq += t.pnl; curve.push({ t: t.exitTime, equity: eq, ms: stamp(t.exitTime) }); });
+    }
+    const updated = asTime(data.updated);
+    if (updated && equity != null) curve.push({ t: updated, equity, ms: stamp(updated) });
+    curve.sort((a, b) => a.ms - b.ms);
+    const dayMap = new Map();
+    asc.forEach((t) => {
+      const d = t.exitTime.slice(0, 10);
+      const r = dayMap.get(d) || { date: d, pnl: 0, trades: 0 };
+      r.pnl += t.pnl; r.trades += 1; dayMap.set(d, r);
+    });
+    let maxDd = null;
+    if (curve.length > 1) {
+      let peak = -Infinity; maxDd = 0;
+      curve.forEach((p) => { peak = Math.max(peak, p.equity); maxDd = Math.max(maxDd, (peak - p.equity) / peak * 100); });
+    }
+    const todayKey = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Sofia" });
+    const netPnl = asNumber(st.total_pnl_usdc) ?? (pnls.length ? pnls.reduce((a, b) => a + b, 0) : null);
+    const tradeCount = asNumber(st.trades) ?? (Array.isArray(data.trades) ? pnls.length : null);
+    const winCount = asNumber(st.wins) ?? (pnls.length ? wins.length : null);
+    const position = pos ? {
+      entryTime: asTime(pos.entry_time),
+      entryPrice: asNum(pos.entry_price),
+      volume: asNum(pos.volume),
+      cost: asNum(pos.cost_usdc),
+      stopPrice: asNum(pos.stop_price),
+      takeProfitPrice: asNum(pos.take_profit_price),
+      currentTargetPct: asNumber(strat.take_profit_pct),
+      unrealizedPnl: asNum(pos.unrealized_usdc),
+      unrealizedPct: asNum(pos.unrealized_pct),
+      signalCandle: asText(pos.signal_candle),
+    } : null;
+    return {
+      kind: "daily_macd",
+      sample: data.sample === true,
+      updatedAt: updated,
+      pair: asText(data.pair),
+      currency: splitPair(asText(data.pair)).quote || "USDC",
+      startingCapital: start,
+      bot: { status: asText(data.status), lastCycle: updated, nextCheck: asTime(data.next_check) },
+      price: {
+        last: asNumber(data.last_price),
+        macd: asNumber(ind.macd),
+        macdSignal: asNumber(ind.macd_signal),
+        hist: asNumber(ind.hist),
+        candle: asText(ind.candle_utc_day),
+        crossUp: typeof ind.cross_up === "boolean" ? ind.cross_up : null,
+      },
+      balance: { quote: asNumber(bal.USDC), base: asNumber(bal.BTC), equity },
+      strategy: {
+        stake: asNumber(strat.stake_usdc),
+        tp: asNumber(strat.take_profit_pct),
+        sl: asNumber(strat.stop_loss_pct),
+      },
+      openPosition: position,
+      stats: {
+        totalTrades: tradeCount,
+        wins: winCount,
+        losses: tradeCount != null && winCount != null ? tradeCount - winCount : null,
+        winRate: asNumber(st.win_rate_pct) != null ? asNumber(st.win_rate_pct) / 100 : (pnls.length ? wins.length / pnls.length : null),
+        netPnl,
+        netPnlPct: asNumber(data.equity_change_pct) ?? (netPnl != null && start ? (netPnl / start) * 100 : null),
+        grossProfit: pnls.length ? gp : null,
+        grossLoss: pnls.length ? gl : null,
+        profitFactor: gl < 0 ? gp / Math.abs(gl) : null,
+        avgWin: wins.length ? gp / wins.length : null,
+        avgLoss: losses.length ? gl / losses.length : null,
+        expectancy: pnls.length ? (gp + gl) / pnls.length : null,
+        feesTotal: fees.length ? fees.reduce((a, b) => a + b, 0) : null,
+        maxDrawdownPct: maxDd,
+        todayPnl: dayMap.has(todayKey) ? dayMap.get(todayKey).pnl : (pnls.length || Array.isArray(data.trades) ? 0 : null),
+        dailyLossLimit: null,
+        exitReasons: Object.keys(reasons).length ? reasons : (Array.isArray(data.trades) ? {} : null),
+      },
+      equityCurve: curve,
+      dailyPnl: [...dayMap.values()].sort((a, b) => a.date.localeCompare(b.date)),
+      trades,
+      analyses: [],
+    };
+  }
+
   function $(id) {
     return document.getElementById(id);
   }
 
   function text(id, value) {
     const node = $(id);
-    if (node) node.textContent = value;
+    if (!node) return;
+    node.textContent = state.bot !== "rsi" && (value === "—" || value == null) ? NO_DATA : value;
   }
 
   function setTone(id, value) {
@@ -662,6 +843,9 @@
       ["Стоп", formatQuote(position.stopPrice)],
       ["Цел", formatPctPoints(position.currentTargetPct)],
     ];
+    if (position.takeProfitPrice != null) rows.push(["Цена за цел", formatQuote(position.takeProfitPrice)]);
+    if (position.signalCandle) rows.push(["Сигнална свещ", position.signalCandle]);
+    if (state.bot !== "rsi") rows.forEach((r) => { if (r[1] === "—") r[1] = NO_DATA; });
     rows.forEach(([label, value]) => {
       const wrap = document.createElement("div");
       const dt = document.createElement("dt");
@@ -676,7 +860,7 @@
 
   function exitLabel(reason) {
     if (!reason) return "—";
-    const known = EXIT_ORDER.find(([key]) => key === reason);
+    const known = exitOrder().find(([key]) => key === reason);
     return known ? known[1] : reason;
   }
 
@@ -876,10 +1060,15 @@
     }
   }
 
+  function exitOrder() {
+    return state.bot === "daily_macd" ? EXIT_ORDER_MACD : EXIT_ORDER;
+  }
+
   function renderExits(reasons) {
     const host = $("exits");
     host.replaceChildren();
-    const entries = EXIT_ORDER.map(([key, label, color]) => ({
+    const order = exitOrder();
+    const entries = order.map(([key, label, color]) => ({
       key,
       label,
       color,
@@ -887,7 +1076,7 @@
     }));
     if (reasons) {
       Object.entries(reasons).forEach(([key, value]) => {
-        if (EXIT_ORDER.some(([known]) => known === key)) return;
+        if (order.some(([known]) => known === key)) return;
         entries.push({ key, label: key, color: "var(--faint)", n: asNumber(value) });
       });
     }
@@ -919,7 +1108,7 @@
       label.textContent = entry.label;
       name.append(swatch, label);
       const count = document.createElement("strong");
-      count.textContent = entry.n == null ? "—" : formatInt(entry.n);
+      count.textContent = entry.n == null ? (state.bot !== "rsi" ? NO_DATA : "—") : formatInt(entry.n);
       row.append(name, count);
       list.append(row);
     });
@@ -927,7 +1116,8 @@
   }
 
   function applyFreshness(data) {
-    const info = freshness(data.updatedAt);
+    const staleMs = (BOTS[state.bot] || BOTS.rsi).staleMs;
+    const info = freshness(data.updatedAt, null, staleMs);
     const line = $("freshness");
     const note = $("stale-note");
     const time = $("updated-at");
@@ -941,7 +1131,7 @@
     if (note) {
       note.hidden = !stale;
       note.textContent = info.level === "old"
-        ? "Данните са по-стари от 15 минути"
+        ? `Данните са по-стари от ${Math.round(staleMs / 60000)} минути`
         : "Няма час на обновяване";
     }
   }
@@ -958,7 +1148,9 @@
     const currency = data.currency || "";
     const assets = splitPair(data.pair);
     text("pair", data.pair || "—");
-    document.title = data.pair ? `${data.pair} · Хартиена търговия` : "Хартиена търговия";
+    const botLabel = (BOTS[state.bot] || BOTS.rsi).label;
+    document.title = data.pair ? `${data.pair} · ${botLabel} · Хартиена търговия` : "Хартиена търговия";
+    text("pair", data.pair ? `${data.pair} · ${botLabel}` : botLabel);
     const banner = $("sample-banner");
     if (banner) banner.hidden = !data.sample;
     text("equity", formatQuote(data.balance.equity));
@@ -980,15 +1172,39 @@
     }
     applyStatus(data.bot.status);
 
-    const hasPrice = [data.price.last, data.price.rsi, data.price.tema, data.price.bbMid].some((value) => value != null);
+    const macd = data.kind === "daily_macd";
+    text("lbl-today", macd ? "Днес (затворени)" : "Днес");
+    text("lbl-limit", macd ? "Залог" : "Лимит");
+    if (macd) text("daily-limit", withCurrency(formatQuote(data.strategy.stake), currency));
+    text("lbl-cycle", macd ? "Следваща дневна проверка" : "Последен цикъл");
+    if (macd && cycle) {
+      cycle.textContent = data.bot.nextCheck ? (formatWhen(data.bot.nextCheck) || NO_DATA) : NO_DATA;
+    }
+    text("lbl-i1", "Цена");
+    text("lbl-i2", macd ? "MACD" : "RSI 14");
+    text("lbl-i3", macd ? "Сигнал" : "TEMA 9");
+    text("lbl-i4", macd ? "Хистограма" : "BB среда");
+    const vals = macd
+      ? [data.price.last, data.price.macd, data.price.macdSignal, data.price.hist]
+      : [data.price.last, data.price.rsi, data.price.tema, data.price.bbMid];
+    const hasPrice = vals.some((value) => value != null);
     const indicators = $("indicators");
-    if (indicators) indicators.hidden = !hasPrice;
-    text("price-last", formatQuote(data.price.last));
-    text("price-rsi", formatQuote(data.price.rsi));
-    text("price-tema", formatQuote(data.price.tema));
-    text("price-bb", formatQuote(data.price.bbMid));
+    if (indicators) indicators.hidden = !hasPrice && !macd;
+    text("price-last", formatQuote(vals[0]));
+    text("price-rsi", formatQuote(vals[1]));
+    text("price-tema", formatQuote(vals[2]));
+    text("price-bb", formatQuote(vals[3]));
+    const note = $("indicator-note");
+    if (note) {
+      note.hidden = !macd;
+      note.textContent = macd
+        ? `Дневна свещ: ${data.price.candle || NO_DATA} · пресичане нагоре: ${data.price.crossUp == null ? NO_DATA : (data.price.crossUp ? "да" : "не")}`
+        : "";
+    }
+    const foot = $("footer-note");
+    if (foot) foot.textContent = (BOTS[state.bot] || BOTS.rsi).footer;
 
-    const hasBalance = data.balance.quote != null || data.balance.base != null;
+    const hasBalance = macd || data.balance.quote != null || data.balance.base != null;
     const balance = $("balance");
     if (balance) balance.hidden = !hasBalance;
     text("bal-quote-label", assets.quote || currency || "Котировка");
@@ -1042,6 +1258,9 @@
   async function load() {
     if (state.inFlight) return;
     state.inFlight = true;
+    const bot = state.bot;
+    const cfg = BOTS[bot] || BOTS.rsi;
+    const seq = state.seq;
     const button = $("refresh");
     if (button) button.disabled = true;
     const controller = typeof AbortController === "undefined" ? null : new AbortController();
@@ -1051,19 +1270,20 @@
     try {
       let json;
       try {
-        json = await fetchJson(jsonUrl("data/dashboard.json"), controller ? controller.signal : undefined);
+        json = await fetchJson(jsonUrl(cfg.file), controller ? controller.signal : undefined);
       } catch (error) {
-        if (!error || error.status !== 404) throw error;
-        json = await fetchJson(jsonUrl("data/dashboard.sample.json"), controller ? controller.signal : undefined);
+        if (!error || error.status !== 404 || !cfg.sample) throw error;
+        json = await fetchJson(jsonUrl(cfg.sample), controller ? controller.signal : undefined);
       }
       if (!asObject(json)) throw new Error("shape");
-      const data = normalize(json);
+      const data = bot === "daily_macd" ? normalizeDailyMacd(json) : normalize(json);
       let extra = null;
       try {
-        extra = await fetchJson(jsonUrl("data/analyses.json"), controller ? controller.signal : undefined);
+        extra = await fetchJson(jsonUrl(cfg.analyses), controller ? controller.signal : undefined);
       } catch (e) { extra = null; }
+      if (seq !== state.seq) return;
       data.analyses = mergeAnalyses(normalizeAnalyses(extra), data.analyses);
-      const serialized = JSON.stringify([json, extra]);
+      const serialized = JSON.stringify([bot, json, extra]);
       state.data = data;
       if (serialized !== state.serialized) {
         state.serialized = serialized;
@@ -1073,18 +1293,54 @@
       }
       clearError();
     } catch (error) {
-      showError(state.data != null);
+      if (seq === state.seq) showError(state.data != null);
     } finally {
       clearTimeout(timeout);
       state.inFlight = false;
       if (button) button.disabled = false;
+      if (seq !== state.seq) load();
     }
+  }
+
+  function selectBot(bot, push) {
+    if (!Object.prototype.hasOwnProperty.call(BOTS, bot)) bot = "rsi";
+    state.bot = bot;
+    state.seq += 1;
+    state.serialized = null;
+    state.data = null;
+    analysesSelected = null;
+    try { localStorage.setItem("dashBot", bot); } catch (e) { /* ignore */ }
+    if (push) {
+      try {
+        const url = new URL(location.href);
+        url.searchParams.set("bot", bot);
+        history.replaceState(null, "", url.href);
+      } catch (e) { /* ignore */ }
+    }
+    const sel = $("bot-select");
+    if (sel && sel.value !== bot) sel.value = bot;
+    document.documentElement.dataset.bot = bot;
+    clearError();
+    ["position-body", "trades", "analyses"].forEach((id) => {
+      const host = $(id);
+      if (host) {
+        const p = document.createElement("p");
+        p.className = "empty";
+        p.textContent = "Зареждане…";
+        host.replaceChildren(p);
+      }
+    });
+    load();
   }
 
   function boot() {
     const button = $("refresh");
     if (button) button.addEventListener("click", () => { load(); });
-    load();
+    let stored = null;
+    try { stored = localStorage.getItem("dashBot"); } catch (e) { stored = null; }
+    const sel = $("bot-select");
+    if (sel) sel.addEventListener("change", () => selectBot(sel.value, true));
+    selectBot(resolveBot(location.search, stored), /[?&]bot=/.test(location.search));
     setInterval(() => { load(); }, REFRESH_MS);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") load();
@@ -1095,6 +1351,9 @@
     STALE_MS,
     REFRESH_MS,
     normalize,
+    normalizeDailyMacd,
+    resolveBot,
+    BOTS,
     freshness,
     formatQuote,
     formatSignedQuote,
