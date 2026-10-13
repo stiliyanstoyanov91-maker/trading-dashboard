@@ -1,0 +1,44 @@
+{
+ "bot": "daily-macd",
+ "workspace": "daily-macd",
+ "pair": "BTC/USDC",
+ "mode": "paper",
+ "updated": "2026-10-13T15:01:41+03:00",
+ "status": "running",
+ "strategy": {
+  "timeframe": "1d (Kraken, closes 00:00 UTC)",
+  "entry": "MACD(12,26,9) line crosses above signal on closed daily candle",
+  "take_profit_pct": 10.0,
+  "stop_loss_pct": -4.0,
+  "stake_usdc": 500.0
+ },
+ "last_price": 83234.26,
+ "starting_capital": 10000.0,
+ "balance": {
+  "USDC": 10000.0,
+  "BTC": 0.0
+ },
+ "equity": 10000.0,
+ "equity_change_pct": 0.0,
+ "indicators": {
+  "candle_time": 1791763200,
+  "close": 81769.19,
+  "macd": 698.4259,
+  "macd_signal": 1283.0744,
+  "macd_prev": 915.4768,
+  "macd_signal_prev": 1429.2366,
+  "hist": -584.6485,
+  "cross_up": false,
+  "candle_utc_day": "2026-10-12 (UTC day)"
+ },
+ "next_check": "2026-10-14T03:00:06+03:00",
+ "last_signal": null,
+ "position": null,
+ "stats": {
+  "trades": 0,
+  "wins": 0,
+  "total_pnl_usdc": 0,
+  "win_rate_pct": null
+ },
+ "trades": []
+}
