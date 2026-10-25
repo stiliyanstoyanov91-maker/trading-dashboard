@@ -1,18 +1,18 @@
 {
  "sample": false,
- "updated_at": "2026-10-25T03:16:08+02:00",
+ "updated_at": "2026-10-25T03:17:08+02:00",
  "pair": "BTC/USDC",
  "currency": "USDC",
  "starting_capital": 10000.0,
  "bot": {
   "status": "running",
-  "last_cycle": "2026-10-25T03:16:08+02:00"
+  "last_cycle": "2026-10-25T03:17:08+02:00"
  },
  "price": {
   "last": 80685.19,
   "rsi": 26.45,
-  "tema": 80688.35,
-  "bb_mid": 80730.59
+  "tema": 80685.55,
+  "bb_mid": 80725.06
  },
  "balance": {
   "quote": 9997.0455,
