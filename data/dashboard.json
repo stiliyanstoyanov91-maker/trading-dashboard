@@ -1,23 +1,23 @@
 {
  "sample": false,
- "updated_at": "2026-10-26T13:03:08+02:00",
+ "updated_at": "2026-10-26T13:04:08+02:00",
  "pair": "BTC/USDC",
  "currency": "USDC",
  "starting_capital": 10000.0,
  "bot": {
   "status": "running",
-  "last_cycle": "2026-10-26T13:03:08+02:00"
+  "last_cycle": "2026-10-26T13:04:08+02:00"
  },
  "price": {
-  "last": 80236.08,
-  "rsi": 30.81,
-  "tema": 80236.66,
-  "bb_mid": 80321.66
+  "last": 80303.92,
+  "rsi": 47.28,
+  "tema": 80260.45,
+  "bb_mid": 80320.2
  },
  "balance": {
   "quote": 9976.994,
   "base": 0.00024784,
-  "equity": 9996.8937
+  "equity": 9996.8928
  },
  "open_position": {
   "entry_time": "2026-10-25T03:21:08+02:00",
@@ -26,8 +26,8 @@
   "cost": 19.9996,
   "stop_price": 79081.56,
   "current_target_pct": 1.0,
-  "unrealized_pnl": -0.2036,
-  "unrealized_pct": -1.0152
+  "unrealized_pnl": -0.2045,
+  "unrealized_pct": -1.02
  },
  "stats": {
   "total_trades": 14,
@@ -7562,6 +7562,10 @@
   {
    "t": "2026-10-26T12:59:08+02:00",
    "equity": 9996.8858
+  },
+  {
+   "t": "2026-10-26T13:04:08+02:00",
+   "equity": 9996.8928
   }
  ],
  "daily_pnl": [
