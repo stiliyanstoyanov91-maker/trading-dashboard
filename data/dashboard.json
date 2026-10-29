@@ -1,53 +1,44 @@
 {
  "sample": false,
- "updated_at": "2026-10-29T04:35:08+02:00",
+ "updated_at": "2026-10-29T04:36:08+02:00",
  "pair": "BTC/USDC",
  "currency": "USDC",
  "starting_capital": 10000.0,
  "bot": {
   "status": "running",
-  "last_cycle": "2026-10-29T04:35:08+02:00"
+  "last_cycle": "2026-10-29T04:36:08+02:00"
  },
  "price": {
-  "last": 79791.64,
-  "rsi": 38.56,
-  "tema": 79799.52,
-  "bb_mid": 79881.52
+  "last": 79771.47,
+  "rsi": 37.11,
+  "tema": 79780.2,
+  "bb_mid": 79877.31
  },
  "balance": {
-  "quote": 9977.1202,
-  "base": 0.00024574,
-  "equity": 9996.7264
+  "quote": 9996.6622,
+  "base": 0.0,
+  "equity": 9996.6622
  },
- "open_position": {
-  "entry_time": "2026-10-28T13:02:23+02:00",
-  "entry_price": 81384.97,
-  "volume": 0.00024574,
-  "cost": 19.9995,
-  "stop_price": 79757.27,
-  "current_target_pct": 1.0,
-  "unrealized_pnl": -0.4963,
-  "unrealized_pct": -2.4753
- },
+ "open_position": null,
  "stats": {
-  "total_trades": 15,
+  "total_trades": 16,
   "wins": 8,
-  "losses": 7,
-  "win_rate": 0.5333,
-  "net_pnl": -2.8283,
-  "net_pnl_pct": -0.02828,
+  "losses": 8,
+  "win_rate": 0.5,
+  "net_pnl": -3.3378,
+  "net_pnl_pct": -0.03338,
   "gross_profit": 0.7553,
-  "gross_loss": -3.5836,
-  "profit_factor": 0.2108,
+  "gross_loss": -4.0931,
+  "profit_factor": 0.1845,
   "avg_win": 0.0944,
-  "avg_loss": -0.5119,
-  "expectancy": -0.1886,
-  "fees_total": 1.5567,
+  "avg_loss": -0.5116,
+  "expectancy": -0.2086,
+  "fees_total": 1.6596,
   "max_drawdown_pct": 0.0335,
-  "today_pnl": 0.0,
+  "today_pnl": -0.5095,
   "daily_loss_limit": 10.0,
   "exit_reasons": {
-   "stop": 7,
+   "stop": 8,
    "roi_4": 0,
    "roi_2": 0,
    "roi_1": 7,
@@ -6676,9 +6667,28 @@
    "date": "2026-10-28",
    "pnl": 0.1262,
    "trades": 1
+  },
+  {
+   "date": "2026-10-29",
+   "pnl": -0.5095,
+   "trades": 1
   }
  ],
  "trades": [
+  {
+   "id": 16,
+   "entry_time": "2026-10-28T13:02:23+02:00",
+   "exit_time": "2026-10-29T04:36:08+02:00",
+   "entry_price": 81384.97,
+   "exit_price": 79730.35,
+   "volume": 0.00024574,
+   "pnl": -0.509547,
+   "pnl_pct": -2.5412,
+   "fees": 0.10294,
+   "duration_min": 933.7,
+   "exit_reason": "stop",
+   "analysis": null
+  },
   {
    "id": 15,
    "entry_time": "2026-10-25T03:21:08+02:00",
