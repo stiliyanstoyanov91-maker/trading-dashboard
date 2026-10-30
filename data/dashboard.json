@@ -1,53 +1,44 @@
 {
  "sample": false,
- "updated_at": "2026-10-30T02:18:08+02:00",
+ "updated_at": "2026-10-30T02:19:08+02:00",
  "pair": "BTC/USDC",
  "currency": "USDC",
  "starting_capital": 10000.0,
  "bot": {
   "status": "running",
-  "last_cycle": "2026-10-30T02:18:08+02:00"
+  "last_cycle": "2026-10-30T02:19:08+02:00"
  },
  "price": {
-  "last": 77549.46,
-  "rsi": 40.0,
-  "tema": 77571.89,
-  "bb_mid": 77804.2
+  "last": 77384.14,
+  "rsi": 29.88,
+  "tema": 77347.59,
+  "bb_mid": 77778.18
  },
  "balance": {
-  "quote": 9976.2685,
-  "base": 0.00025284,
-  "equity": 9995.8739
+  "quote": 9995.7652,
+  "base": 0.0,
+  "equity": 9995.7652
  },
- "open_position": {
-  "entry_time": "2026-10-29T22:49:08+02:00",
-  "entry_price": 79099.99,
-  "volume": 0.00025284,
-  "cost": 19.9996,
-  "stop_price": 77517.99,
-  "current_target_pct": 1.0,
-  "unrealized_pnl": -0.4972,
-  "unrealized_pct": -2.4797
- },
+ "open_position": null,
  "stats": {
-  "total_trades": 18,
+  "total_trades": 19,
   "wins": 9,
-  "losses": 9,
-  "win_rate": 0.5,
-  "net_pnl": -3.6798,
-  "net_pnl_pct": -0.0368,
+  "losses": 10,
+  "win_rate": 0.4737,
+  "net_pnl": -4.2348,
+  "net_pnl_pct": -0.04235,
   "gross_profit": 0.9453,
-  "gross_loss": -4.6251,
-  "profit_factor": 0.2044,
+  "gross_loss": -5.1801,
+  "profit_factor": 0.1825,
   "avg_win": 0.105,
-  "avg_loss": -0.5139,
-  "expectancy": -0.2044,
-  "fees_total": 1.8673,
-  "max_drawdown_pct": 0.0409,
-  "today_pnl": 0.0,
+  "avg_loss": -0.518,
+  "expectancy": -0.2229,
+  "fees_total": 1.9701,
+  "max_drawdown_pct": 0.0423,
+  "today_pnl": -0.555,
   "daily_loss_limit": 10.0,
   "exit_reasons": {
-   "stop": 9,
+   "stop": 10,
    "roi_4": 0,
    "roi_2": 0,
    "roi_1": 8,
@@ -7654,6 +7645,10 @@
   {
    "t": "2026-10-30T02:14:08+02:00",
    "equity": 9995.9051
+  },
+  {
+   "t": "2026-10-30T02:19:08+02:00",
+   "equity": 9995.7652
   }
  ],
  "daily_pnl": [
@@ -7721,9 +7716,28 @@
    "date": "2026-10-29",
    "pnl": -0.8515,
    "trades": 3
+  },
+  {
+   "date": "2026-10-30",
+   "pnl": -0.555,
+   "trades": 1
   }
  ],
  "trades": [
+  {
+   "id": 19,
+   "entry_time": "2026-10-29T22:49:08+02:00",
+   "exit_time": "2026-10-30T02:19:08+02:00",
+   "entry_price": 79099.99,
+   "exit_price": 77311.68,
+   "volume": 0.00025284,
+   "pnl": -0.554979,
+   "pnl_pct": -2.7677,
+   "fees": 0.102823,
+   "duration_min": 210.0,
+   "exit_reason": "stop",
+   "analysis": null
+  },
   {
    "id": 18,
    "entry_time": "2026-10-29T19:17:08+02:00",
